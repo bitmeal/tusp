@@ -1,0 +1,14 @@
+version: "3"
+services:
+  minio:
+    volumes:
+      - ./test/.minio/data:/data
+      - ./test/.minio/config:/root/.minio
+
+  mc:
+    tty: false
+    entrypoint: >
+      /bin/sh -c "
+      /usr/bin/mc config host add myminio http://minio:9000 MYACCESSKEY MYSECRETKEY;
+      /usr/bin/mc mb myminio/somebucketname;
+      "

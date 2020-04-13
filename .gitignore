@@ -1,0 +1,23 @@
+# build artifacts
+build/
+build*/
+
+# IDE settings
+.vs/
+.vscode/
+
+# misc
+trash/
+
+# docker-compose env and override
+*.env*
+*docker-compose.*
+!docker-compose.yaml
+!docker-compose.yml
+!docker-compose.override.yaml.example
+!.env.example
+!*.env*.cmd
+
+
+# node.js
+node_modules/
