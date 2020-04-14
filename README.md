@@ -22,6 +22,5 @@ Copy `docker-compose.override.yaml.example` as template to `docker-compose.overr
 for development outside of a docker container on windows: run the app through the provided environment loader as
 ```
 win-exec-compose.env.cmd node app.js
-
 ```
 a postman collection, configured for running the app on your local machine, can be found as `tusp.postman_collection.json` and may be used for development and testing.
