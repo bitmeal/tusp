@@ -60,22 +60,77 @@ var vm = new Vue({
             thumbnailWidth: 128,
             thumbnailMethod: 'contain',
             maxFilesize: {{ maxfilesize }},
+            chunking: true,
+            forceChunking: true,
+            chunkSize: 10000000,
+            parallelChunkUploads: true,
+            retryChunks: true,
+            uploadMultiple: false,
             accept: (file, done) => {
-                fetch(`${vm.baseurl}${vm.presigner}?mail=${vm.mail}&token=${vm.token}`).then((response) => {
-                    response.json().then((presignedData) => {
+                if (!file.upload.chunked)
+                {
+                    fetch(`${vm.baseurl}${vm.presigner}?mail=${vm.mail}&token=${vm.token}`).then((response) => {
+                        response.json().then((presignedData) => {
 
-                        console.log(presignedData);
-                        file['formDataFields'] = presignedData.fields;
-                        file['formDataFields']['x-amz-meta-filename'] = file.name;
+                            console.log(presignedData);
+                            file['formDataFields'] = presignedData.fields;
+                            file['formDataFields']['x-amz-meta-filename'] = file.name;
 
-                        done();
+                            done();
+                        });
+                    }).catch((e) => {
+                        console.error(e);
+                        done(e);
                     });
+                }
+                // CHUNKED
+                else
+                {
+                    fetch(`${vm.baseurl}${vm.presigner}?chunks=${file.upload.totalChunkCount}&mail=${vm.mail}&token=${vm.token}`).then((response) => {
+                        response.json().then((presignedData) => {
+
+                            console.log(presignedData);
+                            file['chunkData'] = presignedData;
+                            file['chunkData']['x-amz-meta-filename'] = file.name;
+
+                            done();
+                        });
+                    }).catch((e) => {
+                        console.error(e);
+                        done(e);
+                    });
+
+                }
+
+            },
+            params: (files, xhr, chunk) => {
+                if(!files[0].upload.chunked)
+                {
+                    return files[0]['formDataFields'];
+                }
+                // CHUNKED
+                else
+                {
+                    var params = files[0]['chunkData']['chunksFields'][chunk.index];
+                    // params['x-amz-meta-filename'] = files[0].name;
+                    return params;
+                }
+            },
+            chunksUploaded: (file, done) => {
+                //call finalize on endpoint
+                var finalizeData = Object.assign({}, file['chunkData']['uploadData']);
+                //finalizeData['Metadata']['x-amz-meta-filename'] = file.name;
+
+                fetch(`${vm.baseurl}${vm.presigner}?finalize=${encodeURIComponent(JSON.stringify(finalizeData))}&mail=${vm.mail}&token=${vm.token}`).then((response) => {
+                    if (response.status == 200) {
+                        this.success = true;
+                    } else {
+                        this.success = false;
+                    }
                 }).catch((e) => {
                     console.error(e);
-                    done(e);
                 });
-
-            }            
+            }
         }
     }),
     mounted(){
@@ -85,6 +140,7 @@ var vm = new Vue({
         // get signed upload url and matching post data from server
         // modify form data posted with each request from data returned by server
         // let dropzone handle the upload and progress indicators
+        /*
         this.$refs.myVueDropzone.dropzone.on("sending", function(file, xhr, formData) { 
             console.log('hooking in dropzone.on("sending"); for file: ', file.name);
             
@@ -95,7 +151,7 @@ var vm = new Vue({
 
             console.log('returned from sending hook');
         });
-
+        */
     },
     computed: {
     },

@@ -24,7 +24,8 @@ const appName = process.env.APP_NAME || '{tusp}';
 const publicAppBaseurl = process.env.APP_PUBLIC_BASEURL || 'http://localhost:8080/';
 const s3bucket = process.env.MINIO_DEFAULT_BUCKET;
 const s3endpoint = process.env.S3_ENDPOINT;
-const postSigner = process.env.POST_SIGN_ENDPOINT || '/postsigner';
+const postSigner = process.env.POST_SIGN_ENDPOINT || 'postsigner';
+const webhookName = process.env.WEBHOOK_NAME || 's3webhook';
 const port = process.env.APP_PORT || 8080;
 const useHTTPS = false;
 const cookieMaxAge = 172800000;
@@ -154,10 +155,50 @@ app.get('/register', function(req, res){
 // s3 presigned url & form-data generation
 app.get('/' + postSigner, (req, res) => {
     if(!isAuth(req, (mail, token) => {
+        
+        if (req.query.finalize !== undefined){
+            uploadData = JSON.parse(req.query.finalize);
+            
+
+            console.log('uploadData: ', JSON.stringify(uploadData));
+
+
+            s3.listParts(uploadData, (err, data) => {
+                if (err) {
+                    console.error('Getting part list encountered an error', err);
+                    res.sendStatus(500);
+                    return;
+                } else {
+                    uploadData['MultipartUpload'] = {Parts: data.Parts};
+                    uploadData['MultipartUpload']['Parts'].forEach((part) => {
+                        delete part['LastModified'];
+                        delete part['Size'];
+                    });
+                    // uploadData.Metadata = {
+                    //     'x-amz-meta-token': token,
+                    //     'x-amz-meta-mail': mail
+                    // }
+                    console.log(JSON.stringify(uploadData));
+
+                    s3.completeMultipartUpload(uploadData, (err, data) => {
+                        if (err) {
+                            console.error('Finalizing multipart upload encountered an error', err);
+                            res.sendStatus(500);
+                            return;
+                        } else {
+                            res.sendStatus(200);
+                            return;    
+                        }
+                    });
+                }
+            });
+            return;
+        }
+
         var key = uuid.v4()
         var params = {
             Bucket: s3bucket,
-            Key: key ,
+            Key: key,
             Fields: {
                 key: key,
                 'x-amz-meta-token': token,
@@ -170,14 +211,96 @@ app.get('/' + postSigner, (req, res) => {
 
         console.log('uuid: ', key);
 
-        s3.createPresignedPost(params, function(err, data) {
-            if (err) {
-            console.error('Presigning post data encountered an error', err);
-            } else {
-            //console.log('The post data is', data);
-            res.end(JSON.stringify(data))
+        if (req.query.chunks === undefined) {
+            if(req.query.filename === undefined){
+                req.sendStatus(404);
+                return;
             }
-        });
+            // no chunking
+            s3.createPresignedPost(params, (err, data) => {
+                if (err) {
+                    console.error('Presigning post data encountered an error', err);
+                    res.sendStatus(500);
+                    return;
+                } else {
+                    //console.log('The post data is', data);
+                    res.end(JSON.stringify(data))
+                    return;
+                }
+            });
+        } else {
+            // chunking
+            var chunks = req.query.chunks;
+            var chunkParams = {};
+            chunkParams.Bucket = params.Bucket;
+            chunkParams.Key = params.Key;
+            chunkParams['Metadata'] = {
+                mail: mail,
+                token: token,
+                filename: req.query.filename
+            }
+
+            // request multi part upload
+            s3.createMultipartUpload(chunkParams, (err, data) => {
+                if (err) {
+                    console.error('Creating multipart upload encountered an error', err);
+                    res.sendStatus(500);
+                    return;
+                } else {
+                    // sign chunks
+
+                    var uploadID = data.UploadId;
+
+                    var signParams = Object.assign({}, params);
+                    delete signParams['Fields'];
+                    delete signParams['Conditions'];
+                    // signParams['Fields'] = {
+                    //     key: signParams.Key,
+                    //     uploadId: uploadID
+                    // };
+                    signParams['UploadId'] = uploadID;
+                    console.log(signParams);
+
+                    var signedChunks = {
+                        uploadData: data,
+                        chunkUrls: []
+                    }
+
+                    function signChunks(count, num, signedChunks) {
+                        if (num <= count){
+                            // chunks to go - sign
+                            signParams.PartNumber = num;
+                            // signParams.Fields.partNumber = num;
+                            
+                            s3.getSignedUrl('uploadPart', signParams,(err, data) => {
+                                if (err) {
+                                    console.error('Presigning post data encountered an error', err);
+                                    res.sendStatus(500);
+                                    return;
+                                } else {
+                                    signedChunks.chunkUrls.push(data);
+                                    // prevent callstack from crashing on recursion
+                                    setTimeout(() => {
+                                        signChunks(count, num + 1, signedChunks);
+                                     });
+                                    
+                                }
+                            });
+                        
+                        } else {
+                            // ready - return them
+                            res.end(JSON.stringify(signedChunks))
+                        }
+                    }
+        
+                    signChunks(chunks, 1, signedChunks);
+                    return;
+        
+
+
+                }
+            });
+        }
     }))
     // not authorized
     {
@@ -186,8 +309,8 @@ app.get('/' + postSigner, (req, res) => {
 })
 
 // s3 upload complete webhook, to keep the server application stateless
-app.post('/s3webhook', (req, res) => {
-    //console.log(JSON.stringify(req.body));
+app.post('/' + webhookName, (req, res) => {
+    console.log(JSON.stringify(req.body));
     if (    req.body.EventName == 's3:ObjectCreated:Post' &&
             req.body.Records[0].s3.bucket.name == s3bucket )
     {
