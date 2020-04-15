@@ -254,31 +254,31 @@ app.get('/' + postSigner, (req, res) => {
                     var signParams = Object.assign({}, params);
                     delete signParams['Fields'];
                     delete signParams['Conditions'];
-                    // signParams['Fields'] = {
-                    //     key: signParams.Key,
-                    //     uploadId: uploadID
-                    // };
+                    signParams['Fields'] = {
+                        key: signParams.Key,
+                        uploadId: uploadID
+                    };
                     signParams['UploadId'] = uploadID;
                     console.log(signParams);
 
                     var signedChunks = {
                         uploadData: data,
-                        chunkUrls: []
+                        chunkFields: []
                     }
 
                     function signChunks(count, num, signedChunks) {
                         if (num <= count){
                             // chunks to go - sign
                             signParams.PartNumber = num;
-                            // signParams.Fields.partNumber = num;
+                            signParams.Fields.partNumber = num;
                             
-                            s3.getSignedUrl('uploadPart', signParams,(err, data) => {
+                            s3.createPresignedPost(signParams,(err, data) => {
                                 if (err) {
                                     console.error('Presigning post data encountered an error', err);
                                     res.sendStatus(500);
                                     return;
                                 } else {
-                                    signedChunks.chunkUrls.push(data);
+                                    signedChunks.chunkFields.push(data.Fields);
                                     // prevent callstack from crashing on recursion
                                     setTimeout(() => {
                                         signChunks(count, num + 1, signedChunks);

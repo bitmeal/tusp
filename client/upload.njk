@@ -111,7 +111,7 @@ var vm = new Vue({
                 // CHUNKED
                 else
                 {
-                    var params = files[0]['chunkData']['chunksFields'][chunk.index];
+                    var params = files[0]['chunkData']['chunkFields'][chunk.index];
                     // params['x-amz-meta-filename'] = files[0].name;
                     return params;
                 }
