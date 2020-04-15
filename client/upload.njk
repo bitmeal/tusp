@@ -1,0 +1,123 @@
+{% extends "template.njk" %}
+
+{% block app %}
+        <v-app v-cloak>
+            <v-content>
+                <v-container fill-height>
+                    <v-layout wrap row align-center justify-center>
+                        <v-col class="card-wrapper">
+                            <v-row class="d-flex">
+                                <v-col>
+                                    <span class="headline">{{ client.appname }}</span>
+                                </v-col>
+                            </v-row>
+                            {# <v-row class="d-flex align-baseline">
+                                <v-col>
+                                    <v-icon>mdi-send</v-icon>
+                                </v-col>
+                                <v-col>
+                                    {{ mail }}
+                                </v-col>
+                            </v-row> #}
+                            <v-row>
+                                <!--<v-file-input multiple label="Select files" id="selector"></v-file-input>-->
+                                <!--<input type="file" id="selector" multiple>-->
+                                <vue-dropzone ref="myVueDropzone" id="dropzone" :options="dropzoneOptions" style="margin: 8px;">
+                                </vue-dropzone>
+                                <!-- <input type="file" id="selector" style="display: none;"/> -->
+                                <!-- <v-btn color="primary" @click="document.getElementById('selector').click();">Browse</v-btn> -->
+                            </v-row>
+                            <v-row class="d-flex">
+                                    <v-btn color="primary" @click="upload"><v-icon>mdi-send</v-icon>&nbsp;&nbsp;{{ mail }}</v-btn>
+                            </v-row>
+                        </v-col>
+                    </v-layout>
+            </v-container>
+            </v-content>
+        </v-app>
+{% endblock %}
+
+{% block script %}
+<script>
+Vue.use(VueMaterial.default)
+
+var vm = new Vue({
+    el: '#app',
+    components: {
+        vueDropzone: vue2Dropzone
+    },
+    data: () => ({
+        baseurl: "{{ client.baseurl }}",
+        presigner: "{{ presigner }}",
+        mail: "{{ mail }}",
+        token: "{{ token }}",
+        dropzoneOptions: {
+            url: "{{ s3url }}",
+            autoProcessQueue: false,
+            addRemoveLinks: true,
+            dictRemoveFile: "<i class='fa fa-trash'></i>",
+            dictCancelUpload: "<i class='fa fa-window-close'></i>",
+            thumbnailWidth: 128,
+            thumbnailMethod: 'contain',
+            maxFilesize: {{ maxfilesize }},
+            accept: (file, done) => {
+                fetch(`${vm.baseurl}${vm.presigner}?mail=${vm.mail}&token=${vm.token}`).then((response) => {
+                    response.json().then((presignedData) => {
+
+                        console.log(presignedData);
+                        file['formDataFields'] = presignedData.fields;
+                        file['formDataFields']['x-amz-meta-filename'] = file.name;
+
+                        done();
+                    });
+                }).catch((e) => {
+                    console.error(e);
+                    done(e);
+                });
+
+            }            
+        }
+    }),
+    mounted(){
+        //console.log(this);
+        console.log('{tusp} ready!')
+        
+        // get signed upload url and matching post data from server
+        // modify form data posted with each request from data returned by server
+        // let dropzone handle the upload and progress indicators
+        this.$refs.myVueDropzone.dropzone.on("sending", function(file, xhr, formData) { 
+            console.log('hooking in dropzone.on("sending"); for file: ', file.name);
+            
+            Object.keys(file.formDataFields).forEach((field) => {
+                console.log('appending form data: ', field, file.formDataFields[field]);
+                formData.append(field, file.formDataFields[field]);
+            });
+
+            console.log('returned from sending hook');
+        });
+
+    },
+    computed: {
+    },
+    methods: {
+        // calls processQueue of the dropzone element to start uploading of all file
+        // files are not uploaded instantaneously on 'drop', but on button click
+        upload() {
+            this.$refs.myVueDropzone.dropzone.processQueue()
+        },
+    }
+})
+</script>
+{% endblock %}
+{% block style %}
+<style>
+    .dz-remove {
+        top: 0% !important;
+        right: 0% !important;
+        font-size: 24px !important;
+        padding-top: 0px !important;
+        color: #ffffff !important;
+        border: none !important;
+    }
+</style>
+{% endblock %}

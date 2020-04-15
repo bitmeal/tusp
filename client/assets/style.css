@@ -1,3 +1,61 @@
+
+/* "full resolution" background */
+#app {
+    background-position: center;
+    background-repeat: no-repeat;
+    background-size: cover;
+    background-color: transparent;
+}
+/* smartphone: square image for changing orientation */
+@media (max-height: 1280px) and (max-width: 1280px) { 
+    #app {
+            background-image: url("https://picsum.photos/seed/{{rand}}/1280/1280?grayscale&blur=7");
+    }
+}
+/* display other: portrait */
+@media (min-height: 1280px) and (orientation: portrait) {
+    #app {
+            background-image: url("https://picsum.photos/seed/{{rand}}/2048/1280?grayscale&blur=7");
+    }
+}
+/* display other: landscape */
+@media (min-width: 1280px) and (orientation: landscape) {
+    #app {
+            background-image: url("https://picsum.photos/seed/{{rand}}/1280/2048?grayscale&blur=7");
+    }
+}
+
+/* preloading background */
+body {
+    background-position: center;
+    background-repeat: no-repeat;
+    background-size: cover;
+}
+/* smartphone: square image for changing orientation */
+@media (max-height: 1280px) and (max-width: 1280px) { 
+    body {
+            background-image: url("https://picsum.photos/seed/{{rand}}/128/128?grayscale&blur=2");
+    }
+}
+/* display other: portrait */
+@media (min-height: 1280px) and (orientation: portrait) {
+    body {
+            background-image: url("https://picsum.photos/seed/{{rand}}/256/128?grayscale&blur=2");
+    }
+}
+/* display other: landscape */
+@media (min-width: 1280px) and (orientation: landscape) {
+    body {
+            background-image: url("https://picsum.photos/seed/{{rand}}/128/256?grayscale&blur=2");
+    }
+}
+
+.card-wrapper {
+    background-color: #fafafae7;
+    padding: 16px;
+    box-shadow: 0px 0px 22px 0px lightslategrey;
+}
+
 [v-cloak] {
     display: none !important;
 }

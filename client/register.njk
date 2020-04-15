@@ -1,0 +1,71 @@
+{% extends "template.njk" %}
+
+{% block app %}
+        <v-app v-cloak>
+            <v-content>
+            <v-container fill-height>
+            <v-layout wrap row align-center justify-center>
+                <v-col class="card-wrapper">
+                    <v-row class="d-flex">
+                        <v-col>
+                            <span class="headline">{{ client.appname }}</span>
+                        </v-col>
+                    </v-row>
+                    <v-row v-if="!success" class="d-flex">
+                            <p>Enter your email address to obtain upload permissions.</p>
+                    </v-row>
+                    <v-row v-if="!success" class="d-flex align-baseline">
+                                    <v-col>
+                                        <v-text-field label="mail prefix" v-model="mailPrefix"></v-text-field>
+                                    </v-col>
+                                    <v-col>{{ mailsuffix }}
+                                    </v-col>
+                    </v-row>
+                    <v-row v-if="!success" class="d-flex justify-right">
+                        <v-btn color="primary" @click="submitMailAddress">Request</v-btn>
+                    </v-row>
+                    <v-row v-if="success" class="d-flex">
+                            <span class="title green">Success. Check your mail.</span>
+                    </v-row>
+                </v-col>
+            </v-layout>
+            </v-container>
+            </v-content>
+        </v-app>
+{% endblock %}
+
+{% block script %}
+<script>
+Vue.use(VueMaterial.default)
+
+new Vue({
+    el: '#app',
+    //vuetify: new Vuetify(),
+    data: () => ({
+        mailPrefix: "",
+        success: false,
+        baseurl: "{{ client.baseurl }}"
+    }),
+    mounted(){
+        console.log(this);
+    },
+    computed: {
+    },
+    methods: {
+        submitMailAddress(){
+            if(this.mailPrefix != ""){
+                fetch(`${this.baseurl}register?mailprefix=${this.mailPrefix}`).then((response) => {
+                    if (response.status == 200) {
+                        this.success = true;
+                    } else {
+                        this.success = false;
+                    }
+                }).catch((e) => {
+                    console.error(e);
+                });
+            }
+        }
+    }
+})
+</script>
+{% endblock %}
