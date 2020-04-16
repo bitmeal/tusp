@@ -11,21 +11,9 @@
                                     <span class="headline">{{ client.appname }}</span>
                                 </v-col>
                             </v-row>
-                            {# <v-row class="d-flex align-baseline">
-                                <v-col>
-                                    <v-icon>mdi-send</v-icon>
-                                </v-col>
-                                <v-col>
-                                    {{ mail }}
-                                </v-col>
-                            </v-row> #}
                             <v-row>
-                                <!--<v-file-input multiple label="Select files" id="selector"></v-file-input>-->
-                                <!--<input type="file" id="selector" multiple>-->
                                 <vue-dropzone ref="myVueDropzone" id="dropzone" :options="dropzoneOptions" style="margin: 8px;">
                                 </vue-dropzone>
-                                <!-- <input type="file" id="selector" style="display: none;"/> -->
-                                <!-- <v-btn color="primary" @click="document.getElementById('selector').click();">Browse</v-btn> -->
                             </v-row>
                             <v-row class="d-flex">
                                     <v-btn color="primary" @click="upload"><v-icon>mdi-send</v-icon>&nbsp;&nbsp;{{ mail }}</v-btn>
@@ -52,7 +40,6 @@ var vm = new Vue({
         mail: "{{ mail }}",
         token: "{{ token }}",
         dropzoneOptions: {
-            // url: "{{ s3url }}",
             autoProcessQueue: false,
             addRemoveLinks: true,
             dictRemoveFile: "<i class='fa fa-trash'></i>",
@@ -67,60 +54,16 @@ var vm = new Vue({
             retryChunks: true,
             uploadMultiple: false,
             method: 'PUT',
-            {# method: (files) => {
-                console.log('method(files); files:', files);
-                if(files == null) {
-                    return 'post';
-                }
-
-                if(!files[0].upload.chunked)
-                {
-                    return 'post';
-                }
-                else
-                {
-                    return 'put';
-                }
-            }, #}
             url: (files) => {
-                console.log('url(files); files:', files);
-                if(!files[0].upload.chunked)
-                {
-                    files[0].postUrl;
-                }
-                else
-                {
-                    chunkIdx = files[0].upload.chunks.length - 1;
-                    return files[0].chunkData.chunkUrls[chunkIdx];
-                }
+                chunkIdx = files[0].upload.chunks.length - 1;
+                return files[0].chunkData.chunkUrls[chunkIdx];
             },
             accept: (file, done) => {
-                if (!file.upload.chunked)
-                {
-                    fetch(`${vm.baseurl}${vm.presigner}?mail=${vm.mail}&token=${vm.token}`).then((response) => {
-                        response.json().then((presignedData) => {
-
-                            console.log(presignedData);
-                            file['formDataFields'] = presignedData.fields;
-                            file['formDataFields']['x-amz-meta-filename'] = file.name;
-                            file['postUrl'] = presignedData.url;
-
-                            done();
-                        });
-                    }).catch((e) => {
-                        console.error(e);
-                        done(e);
-                    });
-                }
-                // CHUNKED
-                else
-                {
                     fetch(`${vm.baseurl}${vm.presigner}?chunks=${file.upload.totalChunkCount}&filename=${file.name}&mail=${vm.mail}&token=${vm.token}`).then((response) => {
                         response.json().then((presignedData) => {
 
                             console.log(presignedData);
                             file['chunkData'] = presignedData;
-                            //file['chunkData']['x-amz-meta-filename'] = file.name;
 
                             done();
                         });
@@ -128,29 +71,10 @@ var vm = new Vue({
                         console.error(e);
                         done(e);
                     });
-
-                }
-
-            },
-            params: (files, xhr, chunk) => {
-                if(!files[0].upload.chunked)
-                {
-                    return files[0]['formDataFields'];
-                }
-                // CHUNKED
-                else
-                {
-                    /*
-                    var params = files[0]['chunkData']['chunkFields'][chunk.index];
-                    // params['x-amz-meta-filename'] = files[0].name;
-                    return params;
-                    */
-                }
             },
             chunksUploaded: (file, done) => {
                 //call finalize on endpoint
                 var finalizeData = Object.assign({}, file['chunkData']['uploadData']);
-                //finalizeData['Metadata']['x-amz-meta-filename'] = file.name;
 
                 fetch(`${vm.baseurl}${vm.presigner}?finalize=${encodeURIComponent(JSON.stringify(finalizeData))}&mail=${vm.mail}&token=${vm.token}`).then((response) => {
                     if (response.status == 200) {
@@ -166,37 +90,17 @@ var vm = new Vue({
         }
     }),
     mounted(){
-        //console.log(this);
+        // ready
         console.log('{tusp} ready!')
         
-        // get signed upload url and matching post data from server
-        // modify form data posted with each request from data returned by server
-        // let dropzone handle the upload and progress indicators
-        /*
-        this.$refs.myVueDropzone.dropzone.on("sending", function(file, xhr, formData) { 
-            console.log('hooking in dropzone.on("sending"); for file: ', file.name);
-            
-            Object.keys(file.formDataFields).forEach((field) => {
-                console.log('appending form data: ', field, file.formDataFields[field]);
-                formData.append(field, file.formDataFields[field]);
-            });
-
-            console.log('returned from sending hook');
+        // override xhr.send to use PUT with chunks and use chunks/slices as body
+        this.$refs.myVueDropzone.dropzone.on("sending", function(file, xhr, formData) {
+            var _send = xhr.send;
+            xhr.send = function() {
+                let chunkIdx = file.upload.chunks.length - 1;
+                _send.call(xhr, file.upload.chunks[chunkIdx].dataBlock.data);
+            }
         });
-        */
-                this.$refs.myVueDropzone.dropzone.on("sending", function(file, xhr, formData) {
-                    var _send = xhr.send;
-                    let chunkIdx = file.upload.chunks.length - 1;
-                    console.log('chunkIdx @ assign:', chunkIdx);
-                    console.log('chunk @ assign:', file.upload.chunks[chunkIdx]);
-                    xhr.send = function() {
-                        let chunkIdx = file.upload.chunks.length - 1;
-                        console.log('chunkIdx @ call:', chunkIdx);
-                        console.log('chunk @ call:', file.upload.chunks[chunkIdx]);
-                        _send.call(xhr, file.upload.chunks[chunkIdx].dataBlock.data);
-                    }
-                });
-
     },
     computed: {
     },
@@ -212,6 +116,7 @@ var vm = new Vue({
 {% endblock %}
 {% block style %}
 <style>
+    /* styling remove and abort buttons in dropzone */
     .dz-remove {
         top: 0% !important;
         right: 0% !important;

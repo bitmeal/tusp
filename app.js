@@ -7,6 +7,8 @@ const uuid = require('uuid');
 const path = require('path');
 const crypto = require('crypto');
 const mime = require('mime-types');
+const mailvalidator = require("email-validator");
+
 // web
 const express = require('express');
 const bodyParser = require('body-parser');
@@ -137,19 +139,20 @@ function deleteCookies (res) {
 
 // register mail addres // get token
 app.get('/register', function(req, res){
-    // TODO: check mail valid!?
-    
-    const mail = req.query.mailprefix + mailSuffix;
+    // mail verification: just check if it does include '@', the suffix/domain is appended server-side
+    if (req.query.mailprefix === undefined) { res.sendStatus(404); return; }
+        
+    var mailPrefix = req.query.mailprefix;
+    const mail = mailPrefix + mailSuffix;
+    if (!mailvalidator.validate(mail)){ res.sendStatus(403); return; }
+
     const token = makeToken(mail);
 
     console.log('request for address:', mail);
     var verificationURL=publicAppBaseurl + '?mail=' + encodeURIComponent(mail) + '&token=' + encodeURIComponent(token)
     console.log(verificationURL)
-    
+        
     res.sendStatus(200);
-    
-    //not valid =>
-    //res.sendStatus(403);
 })
 
 // s3 presigned url & form-data generation
@@ -158,10 +161,7 @@ app.get('/' + postSigner, (req, res) => {
         
         if (req.query.finalize !== undefined){
             uploadData = JSON.parse(req.query.finalize);
-            
-
-            console.log('uploadData: ', JSON.stringify(uploadData));
-
+            // console.log('uploadData: ', JSON.stringify(uploadData));
 
             s3.listParts(uploadData, (err, data) => {
                 if (err) {
@@ -174,13 +174,9 @@ app.get('/' + postSigner, (req, res) => {
                         delete part['LastModified'];
                         delete part['Size'];
                     });
-                    console.log('Multipart Upload Parts:');
-                    console.log(JSON.stringify(uploadData['MultipartUpload']['Parts']));
-                    // uploadData.Metadata = {
-                    //     'x-amz-meta-token': token,
-                    //     'x-amz-meta-mail': mail
-                    // }
-                    console.log(JSON.stringify(uploadData));
+                    // console.log('Multipart Upload Parts:');
+                    // console.log(JSON.stringify(uploadData['MultipartUpload']['Parts']));
+                    // console.log(JSON.stringify(uploadData));
 
                     s3.completeMultipartUpload(uploadData, (err, data) => {
                         if (err) {
@@ -234,7 +230,6 @@ app.get('/' + postSigner, (req, res) => {
                 return;
             }
 
-
             var chunks = req.query.chunks;
             var chunkParams = {};
             chunkParams.Bucket = params.Bucket;
@@ -253,18 +248,13 @@ app.get('/' + postSigner, (req, res) => {
                     return;
                 } else {
                     // sign chunks
-
                     var uploadID = data.UploadId;
 
                     var signParams = Object.assign({}, params);
                     delete signParams['Fields'];
                     delete signParams['Conditions'];
-                    // signParams['Fields'] = {
-                    //     key: signParams.Key,
-                    //     uploadId: uploadID
-                    // };
                     signParams['UploadId'] = uploadID;
-                    console.log(signParams);
+                    // console.log(signParams);
 
                     var signedChunks = {
                         uploadData: data,
@@ -273,9 +263,8 @@ app.get('/' + postSigner, (req, res) => {
 
                     function signChunks(count, num, signedChunks) {
                         if (num <= count){
-                            // chunks to go - sign
+                            // chunks to go -> sign them
                             signParams.PartNumber = num;
-                            //signParams.Fields.partNumber = num;
                             
                             s3.getSignedUrl('uploadPart', signParams,(err, data) => {
                                 if (err) {
@@ -288,21 +277,16 @@ app.get('/' + postSigner, (req, res) => {
                                     setTimeout(() => {
                                         signChunks(count, num + 1, signedChunks);
                                      });
-                                    
                                 }
                             });
-                        
                         } else {
-                            // ready - return them
+                            // ready -> return them
                             res.end(JSON.stringify(signedChunks))
                         }
                     }
         
                     signChunks(chunks, 1, signedChunks);
                     return;
-        
-
-
                 }
             });
         }

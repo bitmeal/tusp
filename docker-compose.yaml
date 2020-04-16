@@ -22,3 +22,13 @@ services:
       /usr/bin/mc admin service restart ${MC_MINIO_NAME};
       /usr/bin/mc event add ${MC_MINIO_NAME}/${MINIO_DEFAULT_BUCKET} arn:minio:sqs::${MINIO_WEBHOOK_NAME}:webhook --event put;
       "
+  
+  tusp:
+    build: .
+    depends_on:
+      - minio
+      - mc
+    env_file:
+      - .env
+    ports:
+      - "${APP_HOST_PORT}:${APP_PORT}"

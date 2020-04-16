@@ -7,6 +7,7 @@
     "aws-sdk": "^2.656.0",
     "body-parser": "^1.19.0",
     "cookie-parser": "^1.4.5",
+    "email-validator": "^2.0.4",
     "express": "^4.17.1",
     "mime-types": "^2.1.26",
     "nunjucks": "^3.2.1",
@@ -14,7 +15,12 @@
   },
   "devDependencies": {},
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "win-env": "win-exec-compose-.env.cmd node app.js",
+    "env": "set -a && source .env && set +a && node app.js",
+    "app": "node app.js",
+    "win-env-token": "win-exec-compose-.env.cmd node make-token.js",
+    "env-token": "set -a && source .env && set +a && node make-token.js",
+    "make-token": "node make-token.js"
   },
   "repository": {
     "type": "git",
@@ -22,7 +28,7 @@
   },
   "keywords": [],
   "author": "",
-  "license": "MPL-v2.0",
+  "license": "MPL-2.0",
   "bugs": {
     "url": "https://github.com/bitmeal/tusp/issues"
   },
