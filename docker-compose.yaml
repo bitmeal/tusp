@@ -21,5 +21,4 @@ services:
       /usr/bin/mc admin config set ${MC_MINIO_NAME} notify_webhook:${MINIO_WEBHOOK_NAME} queue_limit="${MINIO_WEBHOOK_QUEUE_LIMIT}" endpoint="${MINIO_WEBHOOK_SERVER}:${APP_PORT}${MINIO_WEBHOOK_PREFIX}/${WEBHOOK_NAME}" queue_dir="${MINIO_WEBHOOK_QUEUE_DIR}";
       /usr/bin/mc admin service restart ${MC_MINIO_NAME};
       /usr/bin/mc event add ${MC_MINIO_NAME}/${MINIO_DEFAULT_BUCKET} arn:minio:sqs::${MINIO_WEBHOOK_NAME}:webhook --event put;
-      exit 0;
       "

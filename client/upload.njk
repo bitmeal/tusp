@@ -52,7 +52,7 @@ var vm = new Vue({
         mail: "{{ mail }}",
         token: "{{ token }}",
         dropzoneOptions: {
-            url: "{{ s3url }}",
+            // url: "{{ s3url }}",
             autoProcessQueue: false,
             addRemoveLinks: true,
             dictRemoveFile: "<i class='fa fa-trash'></i>",
@@ -62,10 +62,38 @@ var vm = new Vue({
             maxFilesize: {{ maxfilesize }},
             chunking: true,
             forceChunking: true,
-            chunkSize: 10000000,
-            parallelChunkUploads: true,
+            chunkSize: 32000000,
+            parallelChunkUploads: false,
             retryChunks: true,
             uploadMultiple: false,
+            method: 'PUT',
+            {# method: (files) => {
+                console.log('method(files); files:', files);
+                if(files == null) {
+                    return 'post';
+                }
+
+                if(!files[0].upload.chunked)
+                {
+                    return 'post';
+                }
+                else
+                {
+                    return 'put';
+                }
+            }, #}
+            url: (files) => {
+                console.log('url(files); files:', files);
+                if(!files[0].upload.chunked)
+                {
+                    files[0].postUrl;
+                }
+                else
+                {
+                    chunkIdx = files[0].upload.chunks.length - 1;
+                    return files[0].chunkData.chunkUrls[chunkIdx];
+                }
+            },
             accept: (file, done) => {
                 if (!file.upload.chunked)
                 {
@@ -75,6 +103,7 @@ var vm = new Vue({
                             console.log(presignedData);
                             file['formDataFields'] = presignedData.fields;
                             file['formDataFields']['x-amz-meta-filename'] = file.name;
+                            file['postUrl'] = presignedData.url;
 
                             done();
                         });
@@ -86,12 +115,12 @@ var vm = new Vue({
                 // CHUNKED
                 else
                 {
-                    fetch(`${vm.baseurl}${vm.presigner}?chunks=${file.upload.totalChunkCount}&mail=${vm.mail}&token=${vm.token}`).then((response) => {
+                    fetch(`${vm.baseurl}${vm.presigner}?chunks=${file.upload.totalChunkCount}&filename=${file.name}&mail=${vm.mail}&token=${vm.token}`).then((response) => {
                         response.json().then((presignedData) => {
 
                             console.log(presignedData);
                             file['chunkData'] = presignedData;
-                            file['chunkData']['x-amz-meta-filename'] = file.name;
+                            //file['chunkData']['x-amz-meta-filename'] = file.name;
 
                             done();
                         });
@@ -111,9 +140,11 @@ var vm = new Vue({
                 // CHUNKED
                 else
                 {
+                    /*
                     var params = files[0]['chunkData']['chunkFields'][chunk.index];
                     // params['x-amz-meta-filename'] = files[0].name;
                     return params;
+                    */
                 }
             },
             chunksUploaded: (file, done) => {
@@ -123,12 +154,13 @@ var vm = new Vue({
 
                 fetch(`${vm.baseurl}${vm.presigner}?finalize=${encodeURIComponent(JSON.stringify(finalizeData))}&mail=${vm.mail}&token=${vm.token}`).then((response) => {
                     if (response.status == 200) {
-                        this.success = true;
+                        done();
                     } else {
-                        this.success = false;
+                        response.text().then((text) => {done(text);});
                     }
                 }).catch((e) => {
                     console.error(e);
+                    done(e);
                 });
             }
         }
@@ -152,6 +184,19 @@ var vm = new Vue({
             console.log('returned from sending hook');
         });
         */
+                this.$refs.myVueDropzone.dropzone.on("sending", function(file, xhr, formData) {
+                    var _send = xhr.send;
+                    let chunkIdx = file.upload.chunks.length - 1;
+                    console.log('chunkIdx @ assign:', chunkIdx);
+                    console.log('chunk @ assign:', file.upload.chunks[chunkIdx]);
+                    xhr.send = function() {
+                        let chunkIdx = file.upload.chunks.length - 1;
+                        console.log('chunkIdx @ call:', chunkIdx);
+                        console.log('chunk @ call:', file.upload.chunks[chunkIdx]);
+                        _send.call(xhr, file.upload.chunks[chunkIdx].dataBlock.data);
+                    }
+                });
+
     },
     computed: {
     },

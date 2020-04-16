@@ -174,6 +174,8 @@ app.get('/' + postSigner, (req, res) => {
                         delete part['LastModified'];
                         delete part['Size'];
                     });
+                    console.log('Multipart Upload Parts:');
+                    console.log(JSON.stringify(uploadData['MultipartUpload']['Parts']));
                     // uploadData.Metadata = {
                     //     'x-amz-meta-token': token,
                     //     'x-amz-meta-mail': mail
@@ -212,10 +214,6 @@ app.get('/' + postSigner, (req, res) => {
         console.log('uuid: ', key);
 
         if (req.query.chunks === undefined) {
-            if(req.query.filename === undefined){
-                req.sendStatus(404);
-                return;
-            }
             // no chunking
             s3.createPresignedPost(params, (err, data) => {
                 if (err) {
@@ -230,6 +228,13 @@ app.get('/' + postSigner, (req, res) => {
             });
         } else {
             // chunking
+            if(req.query.filename === undefined)
+            {
+                req.sendStatus(404);
+                return;
+            }
+
+
             var chunks = req.query.chunks;
             var chunkParams = {};
             chunkParams.Bucket = params.Bucket;
@@ -254,31 +259,31 @@ app.get('/' + postSigner, (req, res) => {
                     var signParams = Object.assign({}, params);
                     delete signParams['Fields'];
                     delete signParams['Conditions'];
-                    signParams['Fields'] = {
-                        key: signParams.Key,
-                        uploadId: uploadID
-                    };
+                    // signParams['Fields'] = {
+                    //     key: signParams.Key,
+                    //     uploadId: uploadID
+                    // };
                     signParams['UploadId'] = uploadID;
                     console.log(signParams);
 
                     var signedChunks = {
                         uploadData: data,
-                        chunkFields: []
+                        chunkUrls: []
                     }
 
                     function signChunks(count, num, signedChunks) {
                         if (num <= count){
                             // chunks to go - sign
                             signParams.PartNumber = num;
-                            signParams.Fields.partNumber = num;
+                            //signParams.Fields.partNumber = num;
                             
-                            s3.createPresignedPost(signParams,(err, data) => {
+                            s3.getSignedUrl('uploadPart', signParams,(err, data) => {
                                 if (err) {
                                     console.error('Presigning post data encountered an error', err);
                                     res.sendStatus(500);
                                     return;
                                 } else {
-                                    signedChunks.chunkFields.push(data.Fields);
+                                    signedChunks.chunkUrls.push(data);
                                     // prevent callstack from crashing on recursion
                                     setTimeout(() => {
                                         signChunks(count, num + 1, signedChunks);
@@ -311,7 +316,7 @@ app.get('/' + postSigner, (req, res) => {
 // s3 upload complete webhook, to keep the server application stateless
 app.post('/' + webhookName, (req, res) => {
     console.log(JSON.stringify(req.body));
-    if (    req.body.EventName == 's3:ObjectCreated:Post' &&
+    if (    ( req.body.EventName == 's3:ObjectCreated:Post' || req.body.EventName == 's3:ObjectCreated:CompleteMultipartUpload' ) &&
             req.body.Records[0].s3.bucket.name == s3bucket )
     {
         var obucket = req.body.Records[0].s3.bucket.name;
