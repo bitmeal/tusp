@@ -23,6 +23,12 @@ services:
       /usr/bin/mc event add ${MC_MINIO_NAME}/${MINIO_DEFAULT_BUCKET} arn:minio:sqs::${MINIO_WEBHOOK_NAME}:webhook --event put;
       "
   
+  mailer:
+    build:
+      context: github.com/bitmeal/docker-postfix-outbound
+    env_file:
+      - .env
+        
   tusp:
     build: .
     depends_on:

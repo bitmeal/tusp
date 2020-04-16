@@ -10,6 +10,7 @@
     "email-validator": "^2.0.4",
     "express": "^4.17.1",
     "mime-types": "^2.1.26",
+    "nodemailer": "^6.4.6",
     "nunjucks": "^3.2.1",
     "uuid": "^7.0.3"
   },
