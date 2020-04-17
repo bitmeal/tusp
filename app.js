@@ -30,7 +30,8 @@ const appName = process.env.APP_NAME || '{tusp}';
 const publicAppBaseurl = process.env.APP_PUBLIC_BASEURL || 'http://localhost:8080/';
 const s3bucket = process.env.S3_BUCKET;
 const s3endpoint = process.env.S3_ENDPOINT_PUBLIC;
-const postSigner = process.env.APP_SIGNING_ENDPOINT || 'postsigner';
+const signingEndpoint = process.env.APP_SIGNING_ENDPOINT || 'presigner';
+const signingEndpointChunking = process.env.APP_CHUNK_SIGNING_ENDPOINT || 'presignerchunking';
 const webhookName = process.env.APP_S3_WEBHOOK_ENDPOINT || 's3webhook';
 const port = process.env.APP_PORT || 8080;
 const useHTTPS = ( ( process.env.APP_USE_HTTPS && process.env.APP_USE_HTTPS == "true" ) ? true : false );
@@ -229,7 +230,7 @@ app.get('/register', function(req, res){
 })
 
 // s3 presigned url & form-data generation
-app.get('/' + postSigner, (req, res) => {
+app.get('/' + signingEndpoint, (req, res) => {
     if(!isAuth(req, (mail, token) => {
         
         if (req.query.finalize !== undefined){
@@ -420,7 +421,7 @@ app.get('/', (req, res) => {
       // set cookie
       setCookies(res, mail, token);
       // deliver upload form
-      res.render('upload.njk', { title: 'upload | tusp', mail: mail, token: token, presigner: postSigner, maxfilesize: String(maxFileSize),
+      res.render('upload.njk', { title: 'upload | tusp', mail: mail, token: token, presigner: signingEndpoint, maxfilesize: String(maxFileSize),
         s3url: `${s3endpoint}/${s3bucket}`,
         client: clientCfg.extend({
             scripts: ["https://cdn.jsdelivr.net/npm/vue2-dropzone@3.6.0/dist/vue2Dropzone.min.js"],

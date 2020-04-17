@@ -23,6 +23,7 @@ To run a local minio and local mailserver, configure the settings at the end of 
 ```
 docker-compose -f docker-compose.yaml -f docker-compose-minio.yaml -f docker-compose-mailer.yaml up [-d]
 ```
+`.minio.env` and `.mailer.env` help setting up the environment, you likely won't need to edit them.
 
 
 Tu run the app outside of a docker container, import the environment by running the app with:

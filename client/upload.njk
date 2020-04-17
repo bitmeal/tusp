@@ -51,6 +51,7 @@ var vm = new Vue({
             forceChunking: true,
             chunkSize: 32000000,
             parallelChunkUploads: false,
+            parallelUploads: 1,
             retryChunks: true,
             uploadMultiple: false,
             method: 'PUT',
@@ -101,6 +102,16 @@ var vm = new Vue({
                 _send.call(xhr, file.upload.chunks[chunkIdx].dataBlock.data);
             }
         });
+
+        this.$refs.myVueDropzone.dropzone.on("complete", function(file) {
+            // remove finished upload
+            setTimeout(() => {
+                vm.$refs.myVueDropzone.dropzone.removeFile(file);
+            }, 1500);
+            // upload remaining files
+            vm.$refs.myVueDropzone.dropzone.processQueue();
+
+        });
     },
     computed: {
     },
@@ -108,7 +119,7 @@ var vm = new Vue({
         // calls processQueue of the dropzone element to start uploading of all file
         // files are not uploaded instantaneously on 'drop', but on button click
         upload() {
-            this.$refs.myVueDropzone.dropzone.processQueue()
+            this.$refs.myVueDropzone.dropzone.processQueue();
         },
     }
 })

@@ -4,6 +4,7 @@ services:
     build:
       context: github.com/bitmeal/docker-postfix-outbound
     env_file:
+      - .env
       - .mailer.env
 
   tusp:
