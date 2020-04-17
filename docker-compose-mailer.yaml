@@ -1,0 +1,14 @@
+version: "3"
+services:
+  mailer:
+    build:
+      context: github.com/bitmeal/docker-postfix-outbound
+    env_file:
+      - .mailer.env
+
+  tusp:
+    depends_on:
+      - mailer
+    env_file:
+      - .mailer.env
+

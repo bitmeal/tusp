@@ -13,9 +13,12 @@ trash/
 *.env*
 *docker-compose.*
 !docker-compose.yaml
-!docker-compose.yml
+!docker-compose-minio.yaml
+!docker-compose-mailer.yaml
 !docker-compose.override.yaml.example
 !.env.example
+!.minio.env
+!.mailer.env
 !*.env*.cmd
 
 

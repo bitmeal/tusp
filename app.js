@@ -28,12 +28,13 @@ const secret = process.env.TOKEN_SECRET || 'MYSECRET';
 
 const appName = process.env.APP_NAME || '{tusp}';
 const publicAppBaseurl = process.env.APP_PUBLIC_BASEURL || 'http://localhost:8080/';
-const s3bucket = process.env.MINIO_DEFAULT_BUCKET;
-const s3endpoint = process.env.S3_ENDPOINT;
-const postSigner = process.env.POST_SIGN_ENDPOINT || 'postsigner';
-const webhookName = process.env.WEBHOOK_NAME || 's3webhook';
+const s3bucket = process.env.S3_BUCKET;
+const s3endpoint = process.env.S3_ENDPOINT_PUBLIC;
+const postSigner = process.env.APP_SIGNING_ENDPOINT || 'postsigner';
+const webhookName = process.env.APP_S3_WEBHOOK_ENDPOINT || 's3webhook';
 const port = process.env.APP_PORT || 8080;
-const useHTTPS = ( ( process.env.USE_HTTPS && process.env.USE_HTTPS == "true" ) ? true : false );
+const useHTTPS = ( ( process.env.APP_USE_HTTPS && process.env.APP_USE_HTTPS == "true" ) ? true : false );
+const s3UseHTTPS = ( ( process.env.S3_USE_HTTPS && process.env.S3_USE_HTTPS == "true" ) ? true : false );
 const cookieMaxAge = 172800000;
 const maxFileSize = process.env.MAX_FILESIZE_MB || null;
 
@@ -73,12 +74,12 @@ var clientCfg = clientConfig.init(appName, publicAppBaseurl);
 
 // setup S3 client
 var s3  = new AWS.S3({
-          accessKeyId: process.env.MINIO_ACCESS_KEY ,
-          secretAccessKey: process.env.MINIO_SECRET_KEY ,
+          accessKeyId: process.env.S3_ACCESS_KEY ,
+          secretAccessKey: process.env.S3_SECRET_KEY ,
           endpoint: s3endpoint,
           s3ForcePathStyle: true , // needed with minio?
           signatureVersion: 'v4' ,
-          sslEnabled: false ,
+          sslEnabled: s3UseHTTPS ,
           region: 'us-east-2'
 });
 

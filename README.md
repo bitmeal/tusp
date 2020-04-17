@@ -3,21 +3,28 @@
 
 *Share files with your team - backed by any S3-compatible storage.*
 
-**Batteries included:** The provided docker-compose files include a minio instance for completely self-hosted file-sharing.
+**Batteries included:** *docker-compose* files for a self-hosted minio and a postfix mail-server are included
 
 ## run
-Copy `.env.example` to `.env` and adjust settings. To bring up minio, in root of repo, run (`-d` being optional and starting containers in background):
+Copy `.env.example` to `.env`, adjust settings and bring up the app with (`-d` being optional and starting containers in background):
 ```
 docker-compose up [-d]
 ```
-For development outside of a docker container, import the environment by running the app with:
+
+To run a local minio and local mailserver, configure the settings at the end of your copied `.env` file and run *docker-compose* with all compose-files you wish to include:
+```
+docker-compose -f docker-compose.yaml -f docker-compose-minio.yaml -f docker-compose-mailer.yaml up [-d]
+```
+
+
+Tu run the app outside of a docker container, import the environment by running the app with:
 ```
 [NIX] $ npm run env
 [WIN] $ npm run win-env
 ```
 Environment is loaded from the *docker-compose* `.env`-file. On windows the provided script `win-exec-compose.env.cmd node app.js` is used to load the environment.
 
-If your environment is set, run:
+If your environment is set, simply run:
 ```bash
 npm run app
 ```

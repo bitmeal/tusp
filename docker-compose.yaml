@@ -1,39 +1,7 @@
 version: "3"
 services:
-  minio:
-    image: minio/minio
-    ports:
-      - "${MINIO_HOST_PORT}:9000"
-    env_file:
-      - .env
-    command: server ${MINIO_DIR}
-
-  mc:
-    image: minio/mc
-    depends_on:
-      - minio
-    env_file:
-      - .env
-    entrypoint: >
-      /bin/sh -c "
-      for i in 1 2 3; do /usr/bin/mc config host add ${MC_MINIO_NAME} http://minio:9000 ${MINIO_ACCESS_KEY} ${MINIO_SECRET_KEY} && break || sleep 5; done;
-      /usr/bin/mc mb ${MC_MINIO_NAME}/${MINIO_DEFAULT_BUCKET};
-      /usr/bin/mc admin config set ${MC_MINIO_NAME} notify_webhook:${MINIO_WEBHOOK_NAME} queue_limit="${MINIO_WEBHOOK_QUEUE_LIMIT}" endpoint="${MINIO_WEBHOOK_SERVER}:${APP_PORT}${MINIO_WEBHOOK_PREFIX}/${WEBHOOK_NAME}" queue_dir="${MINIO_WEBHOOK_QUEUE_DIR}";
-      /usr/bin/mc admin service restart ${MC_MINIO_NAME};
-      /usr/bin/mc event add ${MC_MINIO_NAME}/${MINIO_DEFAULT_BUCKET} arn:minio:sqs::${MINIO_WEBHOOK_NAME}:webhook --event put;
-      "
-  
-  mailer:
-    build:
-      context: github.com/bitmeal/docker-postfix-outbound
-    env_file:
-      - .env
-        
   tusp:
     build: .
-    depends_on:
-      - minio
-      - mc
     env_file:
       - .env
     ports:
