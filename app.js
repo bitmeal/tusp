@@ -24,7 +24,7 @@ const clientConfig = require('./client/client.config');
 
 //// user config:
 const mailSuffix = process.env.MAIL_SUFFIX;
-const secret = process.env.TOKEN_SECRET || 'MYSECRET';
+const secret = process.env.APP_TOKEN_SECRET;
 
 const appName = process.env.APP_NAME || '{tusp}';
 const publicAppBaseurl = process.env.APP_PUBLIC_BASEURL || 'http://localhost:8080/';
@@ -35,7 +35,7 @@ const webhookName = process.env.APP_S3_WEBHOOK_ENDPOINT || 's3webhook';
 const port = process.env.APP_PORT || 8080;
 const useHTTPS = ( ( process.env.APP_USE_HTTPS && process.env.APP_USE_HTTPS == "true" ) ? true : false );
 const s3UseHTTPS = ( ( process.env.S3_USE_HTTPS && process.env.S3_USE_HTTPS == "true" ) ? true : false );
-const cookieMaxAge = 172800000;
+const cookieMaxAge = process.env.APP_COOKIE_LIFETIME || 172800000;
 const maxFileSize = process.env.MAX_FILESIZE_MB || null;
 
 const mailing = ( ( process.env.MAILING_ENABLED && process.env.MAILING_ENABLED == "true" ) ? true : false );

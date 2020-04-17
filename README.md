@@ -5,6 +5,14 @@
 
 **Batteries included:** *docker-compose* files for a self-hosted minio and a postfix mail-server are included
 
+## the app
+{tusp} allows you to rapidly spin up a file-sharing service for your team or company. To allow zero-setup time and user self-service for registration, **authentication is based on a common *mail-domain***.
+
+#### requirements
+* a single, common mail-domain for your team/company
+* S3-compatible storage [*or* enough resources to use the included minio deployment]
+* a mail-account for sending mails [*or* unblocked port 25 to use the included mailserver]
+
 ## run
 Copy `.env.example` to `.env`, adjust settings and bring up the app with (`-d` being optional and starting containers in background):
 ```
@@ -40,10 +48,13 @@ These tokens may authenticate arbitrary addresses not in your configured domain/
 
 ## customize app
 ### running behind nginx
-configure your *docker-compose* environment in `.env`-file. set the following variables to the public accessible addresses:
+configure your *docker-compose* environment in `.env`-file. set the following variables to the public accessible addresses and correctly setup the HTTPS config:
 ```bash
 APP_PUBLIC_BASEURL=https://my.domain/tusp/
-S3_ENDPOINT=https://objects.my.domain:9000/s3/
+APP_USE_HTTPS=<true|false>
+
+S3_ENDPOINT_PUBLIC=https://objects.my.domain:9000/s3/
+S3_USE_HTTPS=<true|false>
 ```
 **be sure to include trailing slash `/` for `APP_PUBLIC_BASEURL`**
 
