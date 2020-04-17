@@ -11,7 +11,8 @@
 #### requirements
 * a single, common mail-domain for your team/company
 * S3-compatible storage [*or* enough resources to use the included minio deployment]
-* a mail-account for sending mails [*or* unblocked port 25 to use the included mailserver]
+  * **multi-part** upload support **required**
+* a mail-account for sending mails, using smtp [*or* unblocked port 25 to use the included mailserver]
 
 ## run
 Copy `.env.example` to `.env`, adjust settings and bring up the app with (`-d` being optional and starting containers in background):

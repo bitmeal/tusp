@@ -9,6 +9,8 @@
     "cookie-parser": "^1.4.5",
     "email-validator": "^2.0.4",
     "express": "^4.17.1",
+    "express-rate-limit": "^5.1.1",
+    "limiter": "^1.1.5",
     "mime-types": "^2.1.26",
     "nodemailer": "^6.4.6",
     "nunjucks": "^3.2.1",

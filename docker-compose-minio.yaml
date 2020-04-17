@@ -21,9 +21,6 @@ services:
       /bin/sh -c "
       for i in 1 2 3; do /usr/bin/mc config host add ${MC_MINIO_NAME} http://minio:9000 ${S3_ACCESS_KEY} ${S3_SECRET_KEY} && break || sleep 5; done;
       /usr/bin/mc mb ${MC_MINIO_NAME}/${S3_BUCKET};
-      /usr/bin/mc admin config set ${MC_MINIO_NAME} notify_webhook:${MINIO_WEBHOOK_NAME} queue_limit="${MINIO_WEBHOOK_QUEUE_LIMIT}" endpoint="${MINIO_WEBHOOK_SERVER}:${APP_PORT}${MINIO_WEBHOOK_PREFIX}/${APP_S3_WEBHOOK_ENDPOINT}" queue_dir="${MINIO_WEBHOOK_QUEUE_DIR}";
-      /usr/bin/mc admin service restart ${MC_MINIO_NAME};
-      /usr/bin/mc event add ${MC_MINIO_NAME}/${S3_BUCKET} arn:minio:sqs::${MINIO_WEBHOOK_NAME}:webhook --event put;
       "
 
   tusp:
