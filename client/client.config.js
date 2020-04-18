@@ -10,13 +10,13 @@ var staticConfig = {
         "https://fonts.googleapis.com/css?family=Roboto:100,300,400,500,700,900",
         "https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css"
         ],
-    local_scripts: [],
     scripts: [
         "https://cdn.jsdelivr.net/npm/vue@2.6.11/dist/vue.min.js",
         "https://cdn.jsdelivr.net/npm/vue-material@1.0.0-beta-11/dist/vue-material.min.js",
         "https://cdn.jsdelivr.net/npm/vuetify@1.5.24/dist/vuetify.min.js"
-        ]
-};
+        ],
+    local_scripts: []
+    };
 
 class clientConfig {
     constructor(appname, baseurl) {

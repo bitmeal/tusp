@@ -48,6 +48,14 @@ $ make-token    [mail@address [...]]
 ```
 These tokens may authenticate arbitrary addresses not in your configured domain/suffix!
 
+### hosted object storage
+Be sure to configure:
+* your publicly accessible "S3" endpoint URL
+* enabling a suitable CORS policy on your bucket **!!**
+* most likely use `S3_FORCE_PATH_STYLE_URL=false` for working CORS
+* possibly don't forget to set your AWS-region
+
+
 ## customize app
 ### running behind nginx
 configure your *docker-compose* environment in `.env`-file. set the following variables to the public accessible addresses and correctly setup the HTTPS config:
