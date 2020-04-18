@@ -16,6 +16,7 @@ trash/
 !docker-compose-minio.yaml
 !docker-compose-mailer.yaml
 !docker-compose.override.yaml.example
+!docker-compose-minio.override.yaml.example
 !.env.example
 !.minio.env
 !.mailer.env
@@ -24,3 +25,6 @@ trash/
 
 # node.js
 node_modules/
+
+# s3 config
+*.xml
