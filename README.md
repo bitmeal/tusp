@@ -38,7 +38,7 @@ Tu run the app outside of a docker container, import the environment by running 
 [NIX] $ npm run env
 [WIN] $ npm run win-env
 ```
-Environment is loaded from the *docker-compose* `.env`-file. On windows the provided script `win-exec-compose.env.cmd node app.js` is used to load the environment.
+Environment is loaded from the *docker-compose* `.env`-file. On windows the provided script `win-exec-compose.env.cmd` is used to load the environment.
 
 If your environment is set, simply run:
 ```shell
@@ -48,11 +48,11 @@ npm run app
 ### generate additional access tokens
 you may generate additional access tokens and links by using the commands below, analogously to the commands above:
 ```
-$ win-env-token [mail@address [...]]
-$ env-token     [mail@address [...]]
-$ make-token    [mail@address [...]]
+$ npm run win-env-token [mail@address [...]]
+$ npm run env-token     [mail@address [...]]
+$ npm run make-token    [mail@address [...]]
 ```
-These tokens may authenticate arbitrary addresses not in your configured domain/suffix!
+These tokens may authenticate arbitrary **addresses not in your configured domain/suffix!** You have to distribute the tokens manually.
 
 ### hosted object storage
 Be sure to configure:
