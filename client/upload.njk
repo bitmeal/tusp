@@ -52,8 +52,8 @@ var vm = new Vue({
             forceChunking: true,
             chunkSize: {{ chunksize }},
             parallelChunkUploads: false,
-            parallelUploads: 1,
             retryChunks: true,
+            parallelUploads: 1,
             uploadMultiple: false,
             method: 'PUT',
             url: (files) => {

@@ -16,6 +16,7 @@ const cookieParser = require('cookie-parser')
 const nunjucks = require('nunjucks');
 const rateLimiter = require('limiter').RateLimiter;
 const appRateLimiter = require("express-rate-limit");
+const proxy = require('express-http-proxy');
 
 // mailing
 const nodemailer = require("nodemailer");
@@ -34,8 +35,14 @@ const publicAppBaseurl = process.env.APP_PUBLIC_BASEURL || 'http://localhost:808
 const port = process.env.APP_PORT || 8080;
 const useHTTPS = ( ( process.env.APP_USE_HTTPS && process.env.APP_USE_HTTPS == "true" ) ? true : false );
 const signingEndpoint = process.env.APP_SIGNING_ENDPOINT || 'presigner';
+const registrationEndpoint = process.env.APP_REGISTRATION_ENDPOINT || 'register';
+const jsdelivrProxyEndpoint = process.env.APP_JSDELIVR_PROXY_ENDPOINT || 'jsdelivr';
 const s3bucket = process.env.S3_BUCKET;
 const s3endpoint = process.env.S3_ENDPOINT_PUBLIC;
+const s3region = process.env.S3_REGION;
+const s3forcePathStyle = ( ( process.env.S3_FORCE_PATH_STYLE_URL && process.env.S3_FORCE_PATH_STYLE_URL == "true" ) ? true : false );
+const s3endpointPublicFind = process.env.S3_ENDPOINT_PUBLIC_FIND_STR || '';
+const s3endpointPublicReplace = process.env.S3_ENDPOINT_PUBLIC_REPLACE_STR || '';
 const s3UseHTTPS = ( ( process.env.S3_USE_HTTPS && process.env.S3_USE_HTTPS == "true" ) ? true : false );
 const s3ReqLimit = parseInt(process.env.S3_REQ_LIMIT || 5500);
 const s3ReqLimitPer = process.env.S3_REQ_LIMIT_PER || 'second';
@@ -93,15 +100,16 @@ const registerRateLimiter = appRateLimiter({
 });
 
 // setup S3 client
-var s3  = new AWS.S3({
-          accessKeyId: process.env.S3_ACCESS_KEY ,
-          secretAccessKey: process.env.S3_SECRET_KEY ,
-          endpoint: s3endpoint,
-          s3ForcePathStyle: true , // needed with minio?
-          signatureVersion: 'v4' ,
-          sslEnabled: s3UseHTTPS ,
-          region: 'us-east-2'
-});
+var s3config = {
+    accessKeyId: process.env.S3_ACCESS_KEY ,
+    secretAccessKey: process.env.S3_SECRET_KEY ,
+    endpoint: s3endpoint,
+    s3ForcePathStyle: s3forcePathStyle ,
+    signatureVersion: 'v4' ,
+    sslEnabled: s3UseHTTPS 
+};
+if(s3region) { s3config['region'] = s3region; }
+var s3  = new AWS.S3(s3config);
 
 
 // setup mailing
@@ -214,7 +222,7 @@ function deleteCookies (res) {
 }
 
 // register mail addres // get token
-app.get('/register', registerRateLimiter, function(req, res){
+app.get(`/${registrationEndpoint}`, registerRateLimiter, function(req, res){
     // mail verification: just check if it does include '@', the suffix/domain is appended server-side
     if (req.query.mailprefix === undefined) { res.sendStatus(404); return; }
         
@@ -249,7 +257,7 @@ app.get('/register', registerRateLimiter, function(req, res){
 })
 
 // s3 presigned url & form-data generation
-app.get('/' + signingEndpoint, apiRateLimiter, (req, res) => {
+app.get(`/${signingEndpoint}`, apiRateLimiter, (req, res) => {
     if(!isAuth(req, (mail, token) => {
         
         if (req.query.chunks !== undefined && req.query.filename !== undefined)
@@ -298,7 +306,9 @@ app.get('/' + signingEndpoint, apiRateLimiter, (req, res) => {
                                             res.sendStatus(500);
                                             return;
                                         } else {
-                                            signedChunks.chunkUrls.push(data);
+                                            signedChunks.chunkUrls.push(
+                                                data//.replace(s3endpointPublicFind, s3endpointPublicReplace)
+                                            );
                                             // prevent callstack from crashing on recursion
                                             setTimeout(() => {
                                                 signChunks(count, num + 1, signedChunks);
@@ -422,9 +432,8 @@ app.get('/', (req, res) => {
         chunksize: chunkSizeMB * 1000000,
         chunktimeout: chunkTimeout,
         maxfilesize: String(maxFileSize),
-        s3url: `${s3endpoint}/${s3bucket}`,
         client: clientCfg.extend({
-            scripts: ["https://cdn.jsdelivr.net/npm/vue2-dropzone@3.6.0/dist/vue2Dropzone.min.js"],
+            local_scripts: [`${jsdelivrProxyEndpoint}/npm/vue2-dropzone@3.6.0/dist/vue2Dropzone.min.js`],
             styles: ["https://cdn.jsdelivr.net/npm/vue2-dropzone@3.6.0/dist/vue2Dropzone.min.css"]
             })
     });
@@ -434,11 +443,6 @@ app.get('/', (req, res) => {
         res.render('register.njk', { title: 'register | tusp', mailsuffix: mailSuffix, client: clientCfg });
     }
 })
-
-// error on unknown post
-app.post('/', (req, res) => {
-    res.sendStatus(403);
-});
 
 // serve rendered "static"
 var renderedStaticRoute = '\.*(';
@@ -458,6 +462,8 @@ app.get(assetRenderRegExp, (req, res) => {
 // serve static
 app.use(express.static(path.join(__dirname, clientDir + '/' + clientAssetDir)));
 
+// proxy jsdelivr for CORS error avoidance
+app.use(`/${jsdelivrProxyEndpoint}`, proxy('https://cdn.jsdelivr.net'));
 
 //// start app
 console.log('start listening on:', port);
