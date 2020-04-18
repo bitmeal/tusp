@@ -50,6 +50,10 @@ body {
     }
 }
 
+.dz-progress {
+    border-radius: 3px !important;
+}
+
 .card-wrapper {
     background-color: #fafafae7;
     padding: 16px;
